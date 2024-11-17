@@ -16,10 +16,10 @@ data class GifData(
 
 @Serializable
 data class Images(
-    @SerialName("original") val original : OrigImage,
+    @SerialName("original") val original : OrigImage
 )
 
 @Serializable
 data class OrigImage(
-    @SerialName("url") val url : String,
+    @SerialName("url") val url : String
 )
