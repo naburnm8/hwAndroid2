@@ -1,3 +1,16 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+
+val apiKey: String = localProperties.getProperty("API_KEY")
+val giphyUrl: String = localProperties.getProperty("GIPHY_URL")
+
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,7 +18,9 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.10"
 }
 
+
 android {
+
     namespace = "ru.naburnm8.bmstu.android.kotlinhw2"
     compileSdk = 34
 
@@ -15,11 +30,12 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+        buildConfigField("String", "API_KEY", "\"apiKey\"")
+        buildConfigField("String", "GIPHY_URL", "\"giphyUrl\"")
     }
 
     buildTypes {
@@ -36,6 +52,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
     composeOptions {
@@ -50,8 +67,8 @@ android {
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation(platform("androidx.compose:compose-bom:2023.08.00"))
     implementation("androidx.compose.ui:ui")
