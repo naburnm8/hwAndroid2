@@ -34,8 +34,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        buildConfigField("String", "API_KEY", "\"apiKey\"")
-        buildConfigField("String", "GIPHY_URL", "\"giphyUrl\"")
+        buildConfigField("String", "API_KEY", "\"${apiKey}\"")
+        buildConfigField("String", "GIPHY_URL",  "\"${giphyUrl}\"")
     }
 
     buildTypes {

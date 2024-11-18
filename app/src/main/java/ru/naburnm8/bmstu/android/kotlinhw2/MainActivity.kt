@@ -18,6 +18,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val apiKey = BuildConfig.API_KEY
         val url = BuildConfig.GIPHY_URL
+        println(apiKey)
+        println(url)
         setContent {
 
 
