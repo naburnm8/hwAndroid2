@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">kotlinHw2</string>
     <string name="updateGifsTrending">Get trending GIFs</string>
+    <string name="gifSearch">Search for GIFs…</string>
+    <string name="typeAQuery">Type your query</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+    <string name="mustBeNonNull">Query must not be empty</string>
 </resources>
