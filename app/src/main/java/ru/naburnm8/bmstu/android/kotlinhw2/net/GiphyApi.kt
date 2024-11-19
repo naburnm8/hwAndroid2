@@ -9,9 +9,12 @@ import ru.naburnm8.bmstu.android.kotlinhw2.net.models.GiphySingletResponse
 interface GiphyApi {
 
     @GET("v1/gifs/random")
-    suspend fun getRandomGif(@Query("api-key") apiKey: String, @Query("tag") tag : String): Response<GiphySingletResponse>
+    suspend fun getRandomGif(@Query("api_key") apiKey: String, @Query("tag") tag : String): Response<GiphySingletResponse>
 
     @GET("v1/gifs/trending")
-    suspend fun getNTrendingGifs(@Query("api-key") apiKey: String, @Query("limit") limit: Int): Response<GiphyListResponse>
+    suspend fun getNTrendingGifs(@Query("api_key") apiKey: String, @Query("limit") limit: Int): Response<GiphyListResponse>
+
+    @GET("v1/gifs/search")
+    suspend fun getNQueryGifs(@Query("api_key") apiKey: String, @Query("limit") limit: Int, @Query("q") query: String): Response<GiphyListResponse>
 
 }

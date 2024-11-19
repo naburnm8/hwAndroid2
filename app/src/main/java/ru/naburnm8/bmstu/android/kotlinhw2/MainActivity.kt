@@ -1,30 +1,116 @@
 package ru.naburnm8.bmstu.android.kotlinhw2
 
+import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
+import android.widget.ImageView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import com.bumptech.glide.Glide
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.launch
+import ru.naburnm8.bmstu.android.kotlinhw2.net.GiphyRepository
+import ru.naburnm8.bmstu.android.kotlinhw2.net.models.GifData
+import ru.naburnm8.bmstu.android.kotlinhw2.net.models.GiphyListResponse
+import ru.naburnm8.bmstu.android.kotlinhw2.net.models.GiphySingletResponse
 
 import ru.naburnm8.bmstu.android.kotlinhw2.ui.theme.KotlinHw2Theme
 
 class MainActivity : ComponentActivity() {
+    private val giphyRepository by lazy { GiphyRepository(BuildConfig.GIPHY_URL) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val apiKey = BuildConfig.API_KEY
-        val url = BuildConfig.GIPHY_URL
-        println(apiKey)
-        println(url)
         setContent {
+                TrendingGifsScreen(giphyRepository)
+            }
+        }
 
+    @Composable
+    fun TrendingGifsScreen(giphyRepository: GiphyRepository) {
+        var gifList by rememberSaveable { mutableStateOf<List<GifData>?>(null) }
+        val coroutineScope = rememberCoroutineScope()
+        val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (isLandscape) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(10.dp)
+                )
+                {
+                    items(gifList ?: emptyList()) { gifData ->
+                        GifItem(gifData)
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                )
+                {
+                    items(gifList ?: emptyList()) { gifData ->
+                        GifItem(gifData)
+                    }
+                }
+            }
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = {
+                    val handler = CoroutineExceptionHandler { _, exception ->
+                        run {
+                            Log.println(
+                                Log.ERROR,
+                                "MainActivity: Request",
+                                "Exception:" + (exception.message ?: "")
+                            )
+                            Toast.makeText(baseContext, exception.message ?: "", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    coroutineScope.launch(handler) {
+                        val response = giphyRepository.requestNTrendingGifs(BuildConfig.API_KEY, 20)
+                        gifList = response?.data
+                    }
+                }, modifier = Modifier.weight(1f)) {
+                    Text(text = getString(R.string.updateGifsTrending))
+                }
 
             }
         }
     }
+
+    @Composable
+    fun GifItem(gifData: GifData) {
+        Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+            AndroidView(factory = { context -> ImageView(context).apply {
+                scaleType = ImageView.ScaleType.FIT_CENTER
+            } }, modifier = Modifier.fillMaxSize(),
+                update = {imageView -> Glide.with(imageView.context).load(gifData.images.original.url).into(imageView) }
+            )
+            Text(text = gifData.title, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), textAlign = TextAlign.Center)
+        }
+    }
+    }
+
 
 

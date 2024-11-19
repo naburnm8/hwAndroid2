@@ -11,6 +11,7 @@ data class GiphySingletResponse (
 
 @Serializable
 data class GifData(
+    @SerialName("title") val title: String,
     @SerialName("images") val images: Images
 )
 
