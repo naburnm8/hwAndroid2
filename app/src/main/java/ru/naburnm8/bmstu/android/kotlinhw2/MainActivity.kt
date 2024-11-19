@@ -27,6 +27,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import ru.naburnm8.bmstu.android.kotlinhw2.net.GiphyRepository
@@ -122,7 +123,9 @@ class MainActivity : ComponentActivity() {
             AndroidView(factory = { context -> ImageView(context).apply {
                 scaleType = ImageView.ScaleType.FIT_CENTER
             } }, modifier = Modifier.fillMaxSize(),
-                update = {imageView -> Glide.with(imageView.context).load(gifData.images.original.url).into(imageView) }
+                update = {imageView -> Glide.with(imageView.context).load(gifData.images.original.url).diskCacheStrategy(
+                    DiskCacheStrategy.ALL)
+                    .into(imageView) }
             )
             Text(text = gifData.title, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), textAlign = TextAlign.Center)
         }
