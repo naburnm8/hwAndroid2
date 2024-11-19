@@ -51,7 +51,16 @@ class MainActivity : ComponentActivity() {
         var dialogueShown by rememberSaveable {mutableStateOf(false)}
         val coroutineScope = rememberCoroutineScope()
         val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-
+        val handler = CoroutineExceptionHandler { _, exception ->
+            run {
+                Log.println(
+                    Log.ERROR,
+                    "MainActivity: Request",
+                    "Exception:" + (exception.message ?: "")
+                )
+                Toast.makeText(baseContext, exception.message ?: "", Toast.LENGTH_LONG).show()
+            }
+        }
         Column(modifier = Modifier.fillMaxSize()) {
             if (isLandscape) {
                 LazyVerticalGrid(
@@ -78,16 +87,6 @@ class MainActivity : ComponentActivity() {
             }
             Row(modifier = Modifier.fillMaxWidth()) {
                 Button(onClick = {
-                    val handler = CoroutineExceptionHandler { _, exception ->
-                        run {
-                            Log.println(
-                                Log.ERROR,
-                                "MainActivity: Request",
-                                "Exception:" + (exception.message ?: "")
-                            )
-                            Toast.makeText(baseContext, exception.message ?: "", Toast.LENGTH_LONG).show()
-                        }
-                    }
                     coroutineScope.launch(handler) {
                         val response = giphyRepository.requestNTrendingGifs(BuildConfig.API_KEY, 20)
                         gifList = response?.data
@@ -104,16 +103,6 @@ class MainActivity : ComponentActivity() {
                             Toast.makeText(baseContext, R.string.mustBeNonNull, Toast.LENGTH_LONG).show()
                         }
                         else{
-                            val handler = CoroutineExceptionHandler { _, exception ->
-                                run {
-                                    Log.println(
-                                        Log.ERROR,
-                                        "MainActivity: Request",
-                                        "Exception:" + (exception.message ?: "")
-                                    )
-                                    Toast.makeText(baseContext, exception.message ?: "", Toast.LENGTH_LONG).show()
-                                }
-                            }
                             coroutineScope.launch(handler) {
                                 val response = giphyRepository.requestNQueryGifs(BuildConfig.API_KEY, 20, it)
                                 gifList = response?.data
