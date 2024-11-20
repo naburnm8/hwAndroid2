@@ -1,12 +1,14 @@
 package ru.naburnm8.bmstu.android.kotlinhw2
 
 import android.content.res.Configuration
+
 import android.os.Bundle
-import android.util.Log
+
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -15,11 +17,13 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,52 +53,117 @@ class MainActivity : ComponentActivity() {
     fun TrendingGifsScreen(giphyRepository: GiphyRepository) {
         var gifList by rememberSaveable { mutableStateOf<List<GifData>?>(null) }
         var dialogueShown by rememberSaveable {mutableStateOf(false)}
-
+        var isLoading by rememberSaveable { mutableStateOf(false) }
+        var hasError by rememberSaveable { mutableStateOf(false) }
+        var buttonUsed by rememberSaveable { mutableStateOf(false) }
+        var lastEnteredQuery by rememberSaveable { mutableStateOf("") }
         val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
         val coroutineScope = rememberCoroutineScope()
         val handler = CoroutineExceptionHandler { _, exception ->
             run {
-                Log.println(
-                    Log.ERROR,
-                    "MainActivity: Request",
-                    "Exception:" + (exception.message ?: "")
-                )
-                //Toast.makeText(baseContext, exception.message ?: "", Toast.LENGTH_LONG).show()
+                //Log.println(
+                    //Log.ERROR,
+                    //"MainActivity: Request",
+                    //"Exception:" + (exception.message ?: "")
+                //)
+                isLoading = false
+                Toast.makeText(baseContext, exception.message ?: "", Toast.LENGTH_LONG).show()
             }
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
-            if (isLandscape) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(4),
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(10.dp)
-                )
-                {
-                    items(gifList ?: emptyList()) { gifData ->
-                        GifItem(gifData)
+            when {
+                isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                )
-                {
-                    items(gifList ?: emptyList()) { gifData ->
-                        GifItem(gifData)
+                hasError -> {
+                    Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
+                        Column{
+                            Box (modifier = Modifier.clickable(onClick = {
+                                if (buttonUsed){
+                                    coroutineScope.launch(handler) {
+                                        buttonUsed = true
+                                        isLoading = true
+                                        hasError = false
+                                        try {
+                                            val response = giphyRepository.requestNQueryGifs(BuildConfig.API_KEY, 20, lastEnteredQuery)
+                                            gifList = response?.data
+                                        } catch (e: Exception){
+                                            Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
+                                            hasError = true
+                                        } finally {
+                                            isLoading = false
+                                        }
+                                    }
+                                }
+                                else {
+                                    coroutineScope.launch(handler) {
+                                        buttonUsed = false
+                                        isLoading = true
+                                        hasError = false
+                                        try {
+                                            val response = giphyRepository.requestNTrendingGifs(BuildConfig.API_KEY, 20)
+                                            gifList = response?.data
+                                        } catch (e: Exception){
+                                            Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
+                                            hasError = true
+                                        } finally {
+                                            isLoading = false
+                                        }
+                                    }
+                                }
+                            })) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = getString(R.string.refresh),
+                                    tint = Color.Red, modifier = Modifier.size(30.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    if (isLandscape) {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(4),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(10.dp)
+                        )
+                        {
+                            items(gifList ?: emptyList()) { gifData ->
+                                GifItem(gifData)
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        )
+                        {
+                            items(gifList ?: emptyList()) { gifData ->
+                                GifItem(gifData)
+                            }
+                        }
                     }
                 }
             }
             Row(modifier = Modifier.fillMaxWidth()) {
                 Button(onClick = {
                     coroutineScope.launch(handler) {
+                        buttonUsed = false
+                        isLoading = true
+                        hasError = false
                         try {
                             val response = giphyRepository.requestNTrendingGifs(BuildConfig.API_KEY, 20)
                             gifList = response?.data
                         } catch (e: Exception){
                             Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
+                            hasError = true
+                        } finally {
+                            isLoading = false
                         }
                     }
                 }, modifier = Modifier.weight(1f)) {
@@ -110,11 +179,18 @@ class MainActivity : ComponentActivity() {
                         }
                         else{
                                 coroutineScope.launch(handler) {
+                                    lastEnteredQuery = it
+                                    buttonUsed = true
+                                    isLoading = true
+                                    hasError = false
                                     try {
                                         val response = giphyRepository.requestNQueryGifs(BuildConfig.API_KEY, 20, it)
                                         gifList = response?.data
                                     } catch (e: Exception){
                                         Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
+                                        hasError = true
+                                    } finally {
+                                        isLoading = false
                                     }
                                 }
                         }

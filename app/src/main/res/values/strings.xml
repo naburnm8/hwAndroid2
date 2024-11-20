@@ -6,4 +6,5 @@
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
     <string name="mustBeNonNull">Query must not be empty</string>
+    <string name="refresh">An error has occurred, your request cannot be processed</string>
 </resources>
