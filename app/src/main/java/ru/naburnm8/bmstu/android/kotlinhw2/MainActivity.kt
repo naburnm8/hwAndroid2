@@ -28,8 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import ru.naburnm8.bmstu.android.kotlinhw2.net.GiphyRepository
 import ru.naburnm8.bmstu.android.kotlinhw2.net.models.GifData
 import ru.naburnm8.bmstu.android.kotlinhw2.net.models.GiphyListResponse
@@ -50,8 +49,9 @@ class MainActivity : ComponentActivity() {
     fun TrendingGifsScreen(giphyRepository: GiphyRepository) {
         var gifList by rememberSaveable { mutableStateOf<List<GifData>?>(null) }
         var dialogueShown by rememberSaveable {mutableStateOf(false)}
-        val coroutineScope = rememberCoroutineScope()
+
         val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val coroutineScope = rememberCoroutineScope()
         val handler = CoroutineExceptionHandler { _, exception ->
             run {
                 Log.println(
@@ -59,9 +59,10 @@ class MainActivity : ComponentActivity() {
                     "MainActivity: Request",
                     "Exception:" + (exception.message ?: "")
                 )
-                Toast.makeText(baseContext, exception.message ?: "", Toast.LENGTH_LONG).show()
+                //Toast.makeText(baseContext, exception.message ?: "", Toast.LENGTH_LONG).show()
             }
         }
+
         Column(modifier = Modifier.fillMaxSize()) {
             if (isLandscape) {
                 LazyVerticalGrid(
@@ -89,8 +90,12 @@ class MainActivity : ComponentActivity() {
             Row(modifier = Modifier.fillMaxWidth()) {
                 Button(onClick = {
                     coroutineScope.launch(handler) {
-                        val response = giphyRepository.requestNTrendingGifs(BuildConfig.API_KEY, 20)
-                        gifList = response?.data
+                        try {
+                            val response = giphyRepository.requestNTrendingGifs(BuildConfig.API_KEY, 20)
+                            gifList = response?.data
+                        } catch (e: Exception){
+                            Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }, modifier = Modifier.weight(1f)) {
                     Text(text = getString(R.string.updateGifsTrending))
@@ -104,10 +109,14 @@ class MainActivity : ComponentActivity() {
                             Toast.makeText(baseContext, R.string.mustBeNonNull, Toast.LENGTH_LONG).show()
                         }
                         else{
-                            coroutineScope.launch(handler) {
-                                val response = giphyRepository.requestNQueryGifs(BuildConfig.API_KEY, 20, it)
-                                gifList = response?.data
-                            }
+                                coroutineScope.launch(handler) {
+                                    try {
+                                        val response = giphyRepository.requestNQueryGifs(BuildConfig.API_KEY, 20, it)
+                                        gifList = response?.data
+                                    } catch (e: Exception){
+                                        Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                         }
 
                     })
