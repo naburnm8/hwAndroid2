@@ -1,5 +1,6 @@
 package ru.naburnm8.bmstu.android.kotlinhw2
 
+import android.content.Context
 import android.content.res.Configuration
 
 import android.os.Bundle
@@ -67,9 +68,11 @@ class MainActivity : ComponentActivity() {
                     //"Exception:" + (exception.message ?: "")
                 //)
                 isLoading = false
+                hasError = true
                 Toast.makeText(baseContext, exception.message ?: "", Toast.LENGTH_LONG).show()
             }
         }
+
 
         Column(modifier = Modifier.fillMaxSize()) {
             when {
@@ -83,36 +86,32 @@ class MainActivity : ComponentActivity() {
                         Column{
                             Box (modifier = Modifier.clickable(onClick = {
                                 if (buttonUsed){
-                                    coroutineScope.launch(handler) {
-                                        buttonUsed = true
-                                        isLoading = true
-                                        hasError = false
-                                        try {
-                                            val response = giphyRepository.requestNQueryGifs(BuildConfig.API_KEY, 20, lastEnteredQuery)
-                                            gifList = response?.data
-                                        } catch (e: Exception){
-                                            Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
-                                            hasError = true
-                                        } finally {
-                                            isLoading = false
-                                        }
-                                    }
+                                    updateQueryGifs(
+                                        coroutineScope,
+                                        giphyRepository,
+                                        BuildConfig.API_KEY,
+                                        handler,
+                                        {gifList = it},
+                                        {isLoading = it},
+                                        {hasError = it},
+                                        {buttonUsed = it},
+                                        {lastEnteredQuery = it},
+                                        baseContext,
+                                        lastEnteredQuery
+                                    )
                                 }
                                 else {
-                                    coroutineScope.launch(handler) {
-                                        buttonUsed = false
-                                        isLoading = true
-                                        hasError = false
-                                        try {
-                                            val response = giphyRepository.requestNTrendingGifs(BuildConfig.API_KEY, 20)
-                                            gifList = response?.data
-                                        } catch (e: Exception){
-                                            Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
-                                            hasError = true
-                                        } finally {
-                                            isLoading = false
-                                        }
-                                    }
+                                    updateTrendingGifs(
+                                        coroutineScope,
+                                        giphyRepository,
+                                        BuildConfig.API_KEY,
+                                        handler,
+                                        {gifList = it},
+                                        {isLoading = it},
+                                        {hasError = it},
+                                        {buttonUsed = it},
+                                        baseContext
+                                    )
                                 }
                             })) {
                                 Icon(
@@ -152,47 +151,43 @@ class MainActivity : ComponentActivity() {
             }
             Row(modifier = Modifier.fillMaxWidth()) {
                 Button(onClick = {
-                    coroutineScope.launch(handler) {
-                        buttonUsed = false
-                        isLoading = true
-                        hasError = false
-                        try {
-                            val response = giphyRepository.requestNTrendingGifs(BuildConfig.API_KEY, 20)
-                            gifList = response?.data
-                        } catch (e: Exception){
-                            Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
-                            hasError = true
-                        } finally {
-                            isLoading = false
-                        }
-                    }
+                    coroutineScope.launch(handler) {}
+                    updateTrendingGifs(
+                        coroutineScope,
+                        giphyRepository,
+                        BuildConfig.API_KEY,
+                        handler,
+                        {gifList = it},
+                        {isLoading = it},
+                        {hasError = it},
+                        {buttonUsed = it},
+                        baseContext
+                    )
                 }, modifier = Modifier.weight(1f)) {
                     Text(text = getString(R.string.updateGifsTrending))
                 }
                 Button(onClick = {
                     dialogueShown = true;
                 }) {Text(getString(R.string.gifSearch))}
-                if(dialogueShown){
-                    SearchDialogue(onDismiss = {dialogueShown = false}, onConfirm = {
+                if (dialogueShown) {
+                    SearchDialogue(onDismiss = {dialogueShown = false}, onConfirm = { it ->
                         if (it == ""){
                             Toast.makeText(baseContext, R.string.mustBeNonNull, Toast.LENGTH_LONG).show()
                         }
                         else{
-                                coroutineScope.launch(handler) {
-                                    lastEnteredQuery = it
-                                    buttonUsed = true
-                                    isLoading = true
-                                    hasError = false
-                                    try {
-                                        val response = giphyRepository.requestNQueryGifs(BuildConfig.API_KEY, 20, it)
-                                        gifList = response?.data
-                                    } catch (e: Exception){
-                                        Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
-                                        hasError = true
-                                    } finally {
-                                        isLoading = false
-                                    }
-                                }
+                            updateQueryGifs(
+                                coroutineScope,
+                                giphyRepository,
+                                BuildConfig.API_KEY,
+                                handler,
+                                {gifList = it},
+                                {isLoading = it},
+                                {hasError = it},
+                                {buttonUsed = it},
+                                {lastEnteredQuery = it},
+                                baseContext,
+                                it
+                            )
                         }
 
                     })
@@ -253,6 +248,62 @@ class MainActivity : ComponentActivity() {
                 }
             }
         )
+    }
+
+    private fun updateTrendingGifs(
+        coroutineScope: CoroutineScope,
+        giphyRepository: GiphyRepository,
+        apiKey: String,
+        handler: CoroutineExceptionHandler,
+        setGifList: (List<GifData>?) -> Unit,
+        setLoading: (Boolean) -> Unit,
+        setError: (Boolean) -> Unit,
+        setButtonUsed: (Boolean) -> Unit,
+        baseContext: Context
+    ) {
+        coroutineScope.launch(handler) {
+            setButtonUsed(false)
+            setLoading(true)
+            setError(false)
+            try {
+                val response = giphyRepository.requestNTrendingGifs(apiKey, 20)
+                setGifList(response?.data)
+            } catch (e: Exception) {
+                Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
+                setError(true)
+            } finally {
+                setLoading(false)
+            }
+        }
+    }
+    private fun updateQueryGifs(
+        coroutineScope: CoroutineScope,
+        giphyRepository: GiphyRepository,
+        apiKey: String,
+        handler: CoroutineExceptionHandler,
+        setGifList: (List<GifData>?) -> Unit,
+        setLoading: (Boolean) -> Unit,
+        setError: (Boolean) -> Unit,
+        setButtonUsed: (Boolean) -> Unit,
+        setLastQuery: (String) -> Unit,
+        baseContext: Context,
+        query: String
+    ) {
+        coroutineScope.launch(handler) {
+            setButtonUsed(true)
+            setLoading(true)
+            setError(false)
+            setLastQuery(query)
+            try {
+                val response = giphyRepository.requestNQueryGifs(apiKey, 20, query)
+                setGifList(response?.data)
+            } catch (e: Exception) {
+                Toast.makeText(baseContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
+                setError(true)
+            } finally {
+                setLoading(false)
+            }
+        }
     }
 }
 
