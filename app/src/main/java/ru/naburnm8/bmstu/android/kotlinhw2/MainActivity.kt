@@ -62,11 +62,6 @@ class MainActivity : ComponentActivity() {
         val coroutineScope = rememberCoroutineScope()
         val handler = CoroutineExceptionHandler { _, exception ->
             run {
-                //Log.println(
-                    //Log.ERROR,
-                    //"MainActivity: Request",
-                    //"Exception:" + (exception.message ?: "")
-                //)
                 isLoading = false
                 hasError = true
                 Toast.makeText(baseContext, exception.message ?: "", Toast.LENGTH_LONG).show()

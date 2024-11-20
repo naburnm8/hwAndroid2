@@ -38,15 +38,15 @@ class GiphyRepository(api: String) {
 
     suspend fun requestNTrendingGifs(apiKey: String, count: Int): GiphyListResponse? {
         val response = giphyApi.getNTrendingGifs(apiKey, count)
-        Log.println(Log.INFO, "GiphyRepository: request", response.isSuccessful.toString())
+        //Log.println(Log.INFO, "GiphyRepository: request", response.isSuccessful.toString())
         if (response.isSuccessful) {
             val body = response.body()
-            Log.println(Log.INFO, "GiphyRepository: request", body.toString())
+            //Log.println(Log.INFO, "GiphyRepository: request", body.toString())
             if (body != null) {
                 return body
             }
         }
-        Log.println(Log.ERROR, "GiphyRepository: request", response.message() + response.raw())
+        //Log.println(Log.ERROR, "GiphyRepository: request", response.message() + response.raw())
         return null
     }
 
